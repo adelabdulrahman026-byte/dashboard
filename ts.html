@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام تسجيل حضور الطلاب</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .buttons {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+        }
+        
+        .delete-btn {
+            background-color: #e74c3c;
+        }
+        
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+        
+        .export-btn {
+            background-color: #27ae60;
+        }
+        
+        .export-btn:hover {
+            background-color: #219653;
+        }
+        
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: center;
+            display: none;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        @media (max-width: 600px) {
+            .buttons {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>نظام تسجيل حضور الطلاب</h1>
+        
+        <div id="message" class="message"></div>
+        
+        <form id="studentForm">
+            <div class="form-group">
+                <label for="name">اسم الطالب:</label>
+                <input type="text" id="name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="id">رقم القيد:</label>
+                <input type="text" id="id" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="date">تاريخ الحضور:</label>
+                <input type="date" id="date" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="time">وقت الحضور:</label>
+                <input type="time" id="time" required>
+            </div>
+            
+            <div class="buttons">
+                <button type="submit">تسجيل الحضور</button>
+                <button type="button" id="exportBtn" class="export-btn">تصدير إلى Excel</button>
+                <button type="button" id="clearBtn" class="delete-btn">حذف جميع البيانات</button>
+            </div>
+        </form>
+        
+        <h2>سجل الحضور</h2>
+        <table id="attendanceTable">
+            <thead>
+                <tr>
+                    <th>اسم الطالب</th>
+                    <th>رقم القيد</th>
+                    <th>التاريخ</th>
+                    <th>الوقت</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- سيتم ملء هذا القسم بالبيانات المحفوظة -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- مكتبة SheetJS لتصدير Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // تعيين التاريخ والوقت الحاليين كقيم افتراضية
+            const now = new Date();
+            const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+            document.getElementById('date').value = localDateTime.toISOString().substring(0, 10);
+            document.getElementById('time').value = localDateTime.toISOString().substring(11, 16);
+            
+            // تحميل البيانات المحفوظة عند بدء التشغيل
+            loadAttendanceData();
+            
+            // إضافة مستمع حدث للنموذج
+            document.getElementById('studentForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                addStudent();
+            });
+            
+            // مستمع حدث لزر التصدير
+            document.getElementById('exportBtn').addEventListener('click', exportToExcel);
+            
+            // مستمع حدث لزر الحذف
+            document.getElementById('clearBtn').addEventListener('click', clearAllData);
+        });
+        
+        // دالة لإضافة طالب جديد
+        function addStudent() {
+            const name = document.getElementById('name').value;
+            const id = document.getElementById('id').value;
+            const date = document.getElementById('date').value;
+            const time = document.getElementById('time').value;
+            
+            if (!name || !id || !date || !time) {
+                showMessage('يرجى ملء جميع الحقول', 'error');
+                return;
+            }
+            
+            // إنشاء كائن للطالب
+            const student = {
+                name: name,
+                id: id,
+                date: date,
+                time: time
+            };
+            
+            // الحصول على البيانات الحالية من localStorage
+            let attendanceData = JSON.parse(localStorage.getItem('attendanceData')) || [];
+            
+            // إضافة الطالب الجديد إلى البيانات
+            attendanceData.push(student);
+            
+            // حفظ البيانات في localStorage
+            localStorage.setItem('attendanceData', JSON.stringify(attendanceData));
+            
+            // إضافة الصف إلى الجدول
+            addRowToTable(student, attendanceData.length - 1);
+            
+            // إظهار رسالة نجاح
+            showMessage('تم تسجيل حضور الطالب بنجاح', 'success');
+            
+            // إعادة تعيين النموذج
+            document.getElementById('studentForm').reset();
+            
+            // تعيين التاريخ والوقت الحاليين من جديد
+            const now = new Date();
+            const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+            document.getElementById('date').value = localDateTime.toISOString().substring(0, 10);
+            document.getElementById('time').value = localDateTime.toISOString().substring(11, 16);
+        }
+        
+        // دالة لتحميل بيانات الحضور
+        function loadAttendanceData() {
+            const attendanceData = JSON.parse(localStorage.getItem('attendanceData')) || [];
+            const tableBody = document.querySelector('#attendanceTable tbody');
+            tableBody.innerHTML = '';
+            
+            attendanceData.forEach((student, index) => {
+                addRowToTable(student, index);
+            });
+        }
+        
+        // دالة لإضافة صف إلى الجدول
+        function addRowToTable(student, index) {
+            const tableBody = document.querySelector('#attendanceTable tbody');
+            const row = document.createElement('tr');
+            
+            row.innerHTML = `
+                <td>${student.name}</td>
+                <td>${student.id}</td>
+                <td>${student.date}</td>
+                <td>${student.time}</td>
+                <td>
+                    <button class="delete-btn" onclick="deleteStudent(${index})">حذف</button>
+                </td>
+            `;
+            
+            tableBody.appendChild(row);
+        }
+        
+        // دالة لحذف طالب
+        function deleteStudent(index) {
+            let attendanceData = JSON.parse(localStorage.getItem('attendanceData')) || [];
+            
+            if (confirm('هل أنت متأكد من حذف هذا السجل؟')) {
+                attendanceData.splice(index, 1);
+                localStorage.setItem('attendanceData', JSON.stringify(attendanceData));
+                loadAttendanceData();
+                showMessage('تم حذف السجل بنجاح', 'success');
+            }
+        }
+        
+        // دالة لتصدير البيانات إلى Excel
+        function exportToExcel() {
+            const attendanceData = JSON.parse(localStorage.getItem('attendanceData')) || [];
+            
+            if (attendanceData.length === 0) {
+                showMessage('لا توجد بيانات للتصدير', 'error');
+                return;
+            }
+            
+            // تحويل البيانات إلى تنسيق مناسب لـ Excel
+            const worksheet = XLSX.utils.json_to_sheet(attendanceData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'سجل الحضور');
+            
+            // إنشاء ملف Excel وتنزيله
+            const date = new Date().toISOString().substring(0, 10);
+            XLSX.writeFile(workbook, `سجل_حضور_الطلاب_${date}.xlsx`);
+            
+            showMessage('تم تصدير البيانات بنجاح', 'success');
+        }
+        
+        // دالة لحذف جميع البيانات
+        function clearAllData() {
+            if (confirm('هل أنت متأكد من حذف جميع البيانات؟ لا يمكن التراجع عن هذا الإجراء.')) {
+                localStorage.removeItem('attendanceData');
+                loadAttendanceData();
+                showMessage('تم حذف جميع البيانات', 'success');
+            }
+        }
+        
+        // دالة لعرض الرسائل
+        function showMessage(text, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = `message ${type}`;
+            messageEl.style.display = 'block';
+            
+            // إخفاء الرسالة بعد 3 ثوان
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
