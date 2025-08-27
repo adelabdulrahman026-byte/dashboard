@@ -1,24 +1,43 @@
-// sw.js
+const CACHE_NAME = "site-cache-v1";
+const FILES_TO_CACHE = [
+  "/", 
+  "/index.html", 
+  "/style.css", 
+  "/script.js", 
+  "/offline.html"
+];
+
+// install
 self.addEventListener("install", event => {
-  console.log("✅ Service Worker Installed");
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(FILES_TO_CACHE);
+    })
+  );
   self.skipWaiting();
 });
 
+// activate
 self.addEventListener("activate", event => {
-  console.log("✅ Service Worker Activated");
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cache => {
+          if (cache !== CACHE_NAME) {
+            return caches.delete(cache);
+          }
+        })
+      );
+    })
+  );
 });
 
-// اعتراض أي طلب Network
+// fetch
 self.addEventListener("fetch", event => {
   event.respondWith(
-    caches.match(event.request).then(response => {
-      if (response) {
-        return response; // لو الملف موجود في الكاش رجعه
-      }
-      // لو مش موجود رجع رسالة بديلة
-      return new Response("Content unavailable. Resource was not cached", {
-        status: 404,
-        headers: { "Content-Type": "text/plain" }
+    fetch(event.request).catch(() => {
+      return caches.match(event.request).then(response => {
+        return response || caches.match("/offline.html");
       });
     })
   );
