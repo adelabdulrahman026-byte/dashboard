@@ -1,7 +1,7 @@
-const CACHE_NAME = "site-cache-v2";
+const CACHE_NAME = "site-cache-v3";
 const FILES_TO_CACHE = [
   "/", 
-  "/index.html", 
+  "/my-site/index.html", 
   "/style.css", 
   "/script.js", 
   "/offline.html"
