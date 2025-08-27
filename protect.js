@@ -1,59 +1,60 @@
 // protect.js
-document.addEventListener('DOMContentLoaded', function() {
-    // منع F12
+(function() {
+    'use strict';
+    
+    var protectionMessage = 'Content unavailable. Resource was not cached';
+    
+    // عندما يفتح المستخدم DevTools
+    function overrideConsole() {
+        // Override console.log وغيرها
+        console.log = function() {
+            return protectionMessage;
+        };
+        console.error = function() {
+            return protectionMessage;
+        };
+        console.warn = function() {
+            return protectionMessage;
+        };
+        console.info = function() {
+            return protectionMessage;
+        };
+    }
+    
+    // محاولة اكتشاف فتح DevTools
+    var devToolsOpen = false;
+    
+    setInterval(function() {
+        var widthThreshold = window.outerWidth - window.innerWidth > 160;
+        var heightThreshold = window.outerHeight - window.innerHeight > 160;
+        
+        if ((widthThreshold || heightThreshold) && !devToolsOpen) {
+            devToolsOpen = true;
+            overrideConsole();
+            debugger; // يوقف التنفيذ ويوجه للـ Sources
+        }
+    }, 1000);
+    
+    // منع مفاتيح DevTools
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'F12' || e.keyCode === 123) {
+        if (
+            e.key === 'F12' || 
+            e.keyCode === 123 ||
+            (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+            (e.ctrlKey && e.shiftKey && e.key === 'J') ||
+            (e.ctrlKey && e.shiftKey && e.key === 'C')
+        ) {
             e.preventDefault();
-            alert('Content unavailable. Resource was not cached');
-            return false;
-        }
-        
-        // منع Ctrl+U (View Source)
-        if (e.ctrlKey && (e.key === 'u' || e.keyCode === 85)) {
-            e.preventDefault();
-            alert('Content unavailable. Resource was not cached');
-            return false;
-        }
-        
-        // منع Ctrl+Shift+I (DevTools)
-        if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.keyCode === 73)) {
-            e.preventDefault();
-            alert('Content unavailable. Resource was not cached');
-            return false;
-        }
-        
-        // منع Ctrl+Shift+J (Console)
-        if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.keyCode === 74)) {
-            e.preventDefault();
-            alert('Content unavailable. Resource was not cached');
-            return false;
-        }
-        
-        // منع Ctrl+Shift+C (Inspect)
-        if (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.keyCode === 67)) {
-            e.preventDefault();
-            alert('Content unavailable. Resource was not cached');
+            overrideConsole();
+            debugger;
             return false;
         }
     });
-
-    // منع النقر بزر الماوس الأيمن
+    
+    // منع right-click
     document.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
-        alert('Content unavailable. Resource was not cached');
-        return false;
-    });
-
-    // منع سحب المحتوى
-    document.addEventListener('dragstart', function(e) {
         e.preventDefault();
         return false;
     });
     
-    // منع نسخ المحتوى (اختياري)
-    document.addEventListener('copy', function(e) {
-        e.preventDefault();
-        alert('Content unavailable. Resource was not cached');
-        return false;
-    });
-});
+})();
