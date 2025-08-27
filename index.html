@@ -181,63 +181,57 @@
         </footer>
     </div>
 <script>
-// الحماية النهائية
-(function() {
-    'use strict';
-    
-    let devToolsOpened = false;
-    
-    // كشف مستمر
-    setInterval(() => {
-        const widthDiff = window.outerWidth - window.innerWidth;
-        const heightDiff = window.outerHeight - window.innerHeight;
-        
-        if (widthDiff > 100 || heightDiff > 100) {
-            if (!devToolsOpened) {
-                devToolsOpened = true;
-                showProtectionMessages();
-            }
-        } else {
-            devToolsOpened = false;
-        }
-    }, 1000);
-    
-    function showProtectionMessages() {
-        // في Console
-        console.clear();
-        console.log('%c⛔ CONTENT PROTECTION', 'color: red; font-size: 24px;');
-        console.log('%cContent unavailable. Resource was not cached', 
-                   'color: #ff4757; font-size: 18px;');
-        console.log('%cDevTools detection is active', 
-                   'color: #747d8c; font-size: 14px;');
-        
-        // في Page إذا Elements tab مفتوح
-        document.body.innerHTML += `
-            <div style="
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                background: red;
-                color: white;
-                padding: 10px;
-                text-align: center;
-                z-index: 9999;
-            ">
-                ⚠️ DevTools Detected - Content unavailable
-            </div>
-        `;
+<script>
+// كود بسيط للحماية
+let originalContent = document.body.innerHTML;
+let devToolsOpen = false;
+
+// مراقبة أدوات المطور
+setInterval(() => {
+    const widthDiff = window.outerWidth - window.innerWidth;
+    if (widthDiff > 100 && !devToolsOpen) {
+        devToolsOpen = true;
+        showProtection();
+    } else if (widthDiff <= 100 && devToolsOpen) {
+        devToolsOpen = false;
+        hideProtection();
     }
-    
-    // منع shortcuts
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
-            e.preventDefault();
-            showProtectionMessages();
-        }
-    });
-    
-})();
+}, 1000);
+
+function showProtection() {
+    originalContent = document.body.innerHTML;
+    document.body.innerHTML = `
+        <div style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: #000;
+            color: white;
+            font-family: Arial;
+            text-align: center;
+        ">
+            <div>
+                <div style="font-size: 40px;">⚠️</div>
+                <h2 style="color: red;">DevTools Detected</h2>
+                <p>Content unavailable</p>
+            </div>
+        </div>
+    `;
+}
+
+function hideProtection() {
+    document.body.innerHTML = originalContent;
+}
+
+// منع F12
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'F12') {
+        e.preventDefault();
+        devToolsOpen = true;
+        showProtection();
+    }
+});
 </script>
 </body>
 </html>
