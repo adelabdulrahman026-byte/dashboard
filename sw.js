@@ -1,8 +1,8 @@
-const CACHE_NAME = "site-cache-v4";
+const CACHE_NAME = "site-cache-v5";
 const FILES_TO_CACHE = [
   "/", 
-  "/my-site/index.html", 
-  "/my-site/README.md",
+  "/adelabdulrahman026-byte/index.html", 
+  "/adelabdulrahman026-byte/README.md",
   "/style.css", 
   "/script.js", 
   "/offline.html"
