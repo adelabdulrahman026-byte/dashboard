@@ -1,14 +1,13 @@
-const CACHE_NAME = "site-cache-v5";
+const CACHE_NAME = "site-cache-v1";
 const FILES_TO_CACHE = [
-  "/", 
-  "/adelabdulrahman026-byte/index.html", 
-  "/adelabdulrahman026-byte/README.md",
-  "/style.css", 
-  "/script.js", 
-  "/offline.html"
+  "/dashboard/",           // الصفحة الرئيسية
+  "/dashboard/index.html",
+  "/dashboard/style.css",
+  "/dashboard/script.js",
+  "/dashboard/offline.html"
 ];
 
-// install
+// تثبيت الـ Service Worker وتخزين الملفات
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
@@ -18,28 +17,31 @@ self.addEventListener("install", event => {
   self.skipWaiting();
 });
 
-// activate
+// تفعيل وحذف أي كاش قديم
 self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
+    caches.keys().then(cacheNames =>
+      Promise.all(
         cacheNames.map(cache => {
           if (cache !== CACHE_NAME) {
             return caches.delete(cache);
           }
         })
-      );
-    })
+      )
+    )
   );
 });
 
-// fetch
+// التعامل مع الطلبات (Fetch)
 self.addEventListener("fetch", event => {
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request).then(response => {
-        return response || caches.match("/offline.html");
-      });
+    caches.match(event.request).then(response => {
+      if (response) {
+        return response; // لو الملف في الكاش: رجّعه
+      }
+      return fetch(event.request).catch(() =>
+        caches.match("/dashboard/offline.html") // بديل لما تكون أوفلاين
+      );
     })
   );
 });
